@@ -4,31 +4,37 @@ from google.genai import types
 from dotenv import load_dotenv
 
 load_dotenv()
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+
+# Ensure the API key is being pulled correctly
+api_key = os.getenv("GEMINI_API_KEY")
+client = genai.Client(api_key=api_key)
 
 def generate_reply(history, new_message):
-    # System Instruction to ensure the AI behaves like a human victim
     system_instruction = """
-    You are a professional AI Honey-Pot. Your goal:
-    1. Adopt a persona (e.g., an elderly person or a busy student).
-    2. Keep the scammer engaged as long as possible.
-    3. Respond in the SAME LANGUAGE as the scammer (Hindi, Tamil, English, etc.).
-    4. Act slightly confused about technology to encourage them to give clear payment IDs or links.
-    5. NEVER admit you are an AI.
+    You are a professional AI Honey-Pot. 
+    1. Act like a believable human victim.
+    2. Respond in the SAME LANGUAGE as the scammer.
+    3. Keep them engaged to extract UPI IDs and links.
     """
 
-    # Format history for Gemini
+    # Format history for the new SDK
     contents = []
     for msg in history:
+        # Map 'agent' to 'model' for Gemini
         role = "user" if msg['sender'] == "scammer" else "model"
-        contents.append({"role": role, "parts": [{"text": msg['text']}]})
+        contents.append(types.Content(role=role, parts=[types.Part.from_text(text=msg['text'])]))
     
     # Add the current message
-    contents.append({"role": "user", "parts": [{"text": new_message}]})
+    contents.append(types.Content(role="user", parts=[types.Part.from_text(text=new_message)]))
 
-    response = client.models.generate_content(
-        model="gemini-1.5-flash",
-        config=types.GenerateContentConfig(system_instruction=system_instruction),
-        contents=contents
-    )
-    return response.text
+    try:
+        # Use the simple model name string
+        response = client.models.generate_content(
+            model="gemini-1.5-flash", 
+            config=types.GenerateContentConfig(system_instruction=system_instruction),
+            contents=contents
+        )
+        return response.text
+    except Exception as e:
+        print(f"AI Generation Error: {e}")
+        return "I'm a bit confused, can you explain that again?"
