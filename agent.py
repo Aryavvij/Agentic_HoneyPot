@@ -1,24 +1,32 @@
 import os
 from google import genai
+from google.genai import types
 from dotenv import load_dotenv
 
 load_dotenv()
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
+# This system prompt defines the 'Intelligence Extractor' persona
 SYSTEM_PROMPT = """
-You are a 'Honey-Pot' AI. Your goal is to engage scammers.
-BEHAVIOR:
-1. Act like a real person (e.g., a busy professional or a confused senior).
-2. NEVER reveal you are an AI.
-3. Be helpful but cautious to keep the scammer talking.
-4. If they ask for money/info, provide 'placeholder' fake info or ask for THEIR details first.
+You are an Agentic Honey-Pot. Your goal is to autonomously engage scammers.
+1. Maintain a believable human persona (e.g., tech-illiterate senior).
+2. Do not reveal you know it's a scam[cite: 199].
+3. Persuade the scammer to give you their UPI ID, bank details, or links[cite: 112].
+4. Be persistent and keep the conversation going as long as possible[cite: 198].
 """
 
-def generate_reply(history: list, current_message: str):
-    # Combine history + current message for the LLM
-    response = client.models.generate_content(
+def generate_agent_response(history, new_message):
+    # Convert conversationHistory into the format Gemini expects
+    formatted_history = []
+    for msg in history:
+        role = "user" if msg['sender'] == "scammer" else "model"
+        formatted_history.append({"role": role, "parts": [{"text": msg['text']}]})
+
+    chat = client.chats.create(
         model="gemini-1.5-flash",
-        config={"system_instruction": SYSTEM_PROMPT},
-        contents=history + [{"role": "user", "parts": [{"text": current_message}]}]
+        config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT)
     )
+    
+    # Send the history + new message
+    response = chat.send_message(new_message)
     return response.text
