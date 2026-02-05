@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
@@ -16,7 +17,7 @@ class ScamRequest(BaseModel):
 
 @app.post("/api/honey-pot")
 async def handle_scam(request: ScamRequest, x_api_key: str = Header(None)):
-    if x_api_key != "AIzaSyDLTVQK9_ntDfP6usOhuJZEHp6FKKv_dJ8": 
+    if x_api_key != os.getenv("INTERNAL_API_KEY"):
         raise HTTPException(status_code=401, detail="Invalid API Key")
 
     # 1. Load Session
