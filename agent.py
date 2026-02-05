@@ -18,6 +18,7 @@ def generate_reply(history, new_message):
     # Properly format history for Gemini 1.5
     formatted_contents = []
     for msg in history:
+        # Gemini roles must be 'user' and 'model'
         role = "user" if msg['sender'] == "scammer" else "model"
         formatted_contents.append(
             types.Content(role=role, parts=[types.Part.from_text(text=msg['text'])])
@@ -29,7 +30,7 @@ def generate_reply(history, new_message):
     )
 
     try:
-        # Use 'gemini-1.5-flash' - the SDK handles the 'models/' prefix internally
+        # FIX: Use JUST the model name. The SDK adds 'models/' automatically.
         response = client.models.generate_content(
             model="gemini-1.5-flash",
             config=types.GenerateContentConfig(
@@ -40,6 +41,6 @@ def generate_reply(history, new_message):
         )
         return response.text
     except Exception as e:
-        # This will show up in Render Logs to tell us EXACTLY what is wrong
-        print(f"CRITICAL AI ERROR: {str(e)}")
+        # This will show up in Render Logs
+        print(f"DEBUG ERROR: {str(e)}")
         return "Oh dear, my phone is acting up. What did you say about the bank?"
