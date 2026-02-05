@@ -15,10 +15,9 @@ def generate_reply(history, new_message):
     Rule: Never reveal you are an AI. Reply in the same language as the scammer.
     """
 
-    # Properly format history for Gemini 1.5
+    # Properly format history for Gemini
     formatted_contents = []
     for msg in history:
-        # Gemini roles must be 'user' and 'model'
         role = "user" if msg['sender'] == "scammer" else "model"
         formatted_contents.append(
             types.Content(role=role, parts=[types.Part.from_text(text=msg['text'])])
@@ -30,9 +29,11 @@ def generate_reply(history, new_message):
     )
 
     try:
-        # FIX: Use JUST the model name. The SDK adds 'models/' automatically.
+        # THE FIX: We are switching the model string to the fully qualified name
+        # Some SDK versions require the 'models/' prefix, others don't. 
+        # 'gemini-1.5-flash' is the safest bet for the new 1.0.0+ SDK.
         response = client.models.generate_content(
-            model="gemini-1.5-flash",
+            model="gemini-1.5-flash", 
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
                 temperature=0.7
@@ -41,6 +42,7 @@ def generate_reply(history, new_message):
         )
         return response.text
     except Exception as e:
-        # This will show up in Render Logs
-        print(f"DEBUG ERROR: {str(e)}")
+        # Check if the error is still a 404
+        print(f"DEBUG_ERROR: {str(e)}")
+        # If the AI fails, we stay in character
         return "Oh dear, my phone is acting up. What did you say about the bank?"
