@@ -16,7 +16,7 @@ class ScamRequest(BaseModel):
 
 @app.post("/api/honey-pot")
 async def handle_scam(request: ScamRequest, x_api_key: str = Header(None)):
-    if x_api_key != "sk_test_12345": # Replace with your real key
+    if x_api_key != "AIzaSyDLTVQK9_ntDfP6usOhuJZEHp6FKKv_dJ8": 
         raise HTTPException(status_code=401, detail="Invalid API Key")
 
     # 1. Load Session
