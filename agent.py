@@ -5,35 +5,35 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Initialize Client
+# Client setup
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 def generate_reply(history, new_message):
+    # This persona is key for 'Engagement Depth' scoring [cite: 208, 263]
     system_instruction = """
     You are an undercover fraud investigator acting as a tech-illiterate victim.
     Goal: Keep the scammer talking to get their bank/UPI details.
     Rule: Never reveal you are an AI. Reply in the same language as the scammer.
     """
 
-    # Properly format history for Gemini
     formatted_contents = []
     for msg in history:
+        # Map roles correctly: 'user' for scammer, 'model' for your agent [cite: 180]
         role = "user" if msg['sender'] == "scammer" else "model"
         formatted_contents.append(
             types.Content(role=role, parts=[types.Part.from_text(text=msg['text'])])
         )
     
-    # Add the current scammer message
     formatted_contents.append(
         types.Content(role="user", parts=[types.Part.from_text(text=new_message)])
     )
 
     try:
-        # THE FIX: We are switching the model string to the fully qualified name
-        # Some SDK versions require the 'models/' prefix, others don't. 
-        # 'gemini-1.5-flash' is the safest bet for the new 1.0.0+ SDK.
+        # THE FIX: Use ONLY the string 'gemini-1.5-flash'
+        # The new SDK adds the 'models/' prefix automatically. 
+        # Adding it manually often causes the 404 you see.
         response = client.models.generate_content(
-            model="gemini-1.5-flash", 
+            model="gemini-1.5-flash",
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
                 temperature=0.7
@@ -42,7 +42,5 @@ def generate_reply(history, new_message):
         )
         return response.text
     except Exception as e:
-        # Check if the error is still a 404
-        print(f"DEBUG_ERROR: {str(e)}")
-        # If the AI fails, we stay in character
+        print(f"GEMINI_ERROR: {str(e)}")
         return "Oh dear, my phone is acting up. What did you say about the bank?"
